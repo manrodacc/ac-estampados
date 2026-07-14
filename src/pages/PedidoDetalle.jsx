@@ -6,6 +6,7 @@ import EstadoBadge from '../components/EstadoBadge'
 import Modal from '../components/Modal'
 
 const movVacio = { tipo: 'egreso', categoria_id: '', concepto: '', monto: '', fecha: '' }
+const itemVacio = { prenda_id: '', talla_id: '', color_id: '', tipo_prenda_id: '', calidad_tela_id: '', cantidad: 1, precio_unitario: 0 }
 
 export default function PedidoDetalle() {
   const { id } = useParams()
@@ -14,11 +15,22 @@ export default function PedidoDetalle() {
   const [resumen, setResumen] = useState(null)
   const [cliente, setCliente] = useState(null)
   const [items, setItems] = useState([])
+  const [rawItems, setRawItems] = useState([])
   const [movimientos, setMovimientos] = useState([])
   const [categorias, setCategorias] = useState([])
+  
+  // Catálogos para prendas
+  const [prendas, setPrendas] = useState([])
+  const [tallas, setTallas] = useState([])
+  const [colores, setColores] = useState([])
+  const [tiposPrenda, setTiposPrenda] = useState([])
+  const [calidades, setCalidades] = useState([])
+
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const [modalPrendasOpen, setModalPrendasOpen] = useState(false)
   const [form, setForm] = useState(movVacio)
+  const [itemsEdit, setItemsEdit] = useState([])
   const [guardando, setGuardando] = useState(false)
   const [eliminando, setEliminando] = useState(false)
 
@@ -28,20 +40,34 @@ export default function PedidoDetalle() {
 
   async function cargarTodo() {
     setLoading(true)
-    const [r, it, mv, cat] = await Promise.all([
+    const [r, it, raw, mv, cat, p, t, col, tp, ct] = await Promise.all([
       supabase.from('vista_resumen_pedido').select('*').eq('pedido_id', id).single(),
       supabase.from('vista_items_pedido').select('*').eq('pedido_id', id),
+      supabase.from('items_pedido').select('*').eq('pedido_id', id),
       supabase
         .from('movimientos')
         .select('*, categorias_movimiento(nombre)')
         .eq('pedido_id', id)
         .order('fecha', { ascending: false }),
       supabase.from('categorias_movimiento').select('*').eq('activo', true),
+      supabase.from('prendas').select('id, nombre').eq('activo', true).order('nombre'),
+      supabase.from('tallas').select('id, nombre').eq('activo', true).order('orden'),
+      supabase.from('colores').select('id, nombre').eq('activo', true).order('nombre'),
+      supabase.from('tipos_prenda').select('id, nombre').eq('activo', true).order('nombre'),
+      supabase.from('calidades_tela').select('id, nombre').eq('activo', true).order('nombre'),
     ])
+    
     setResumen(r.data)
     setItems(it.data || [])
+    setRawItems(raw.data || [])
     setMovimientos(mv.data || [])
     setCategorias(cat.data || [])
+    
+    setPrendas(p.data || [])
+    setTallas(t.data || [])
+    setColores(col.data || [])
+    setTiposPrenda(tp.data || [])
+    setCalidades(ct.data || [])
 
     if (r.data) {
       const { data: c } = await supabase
@@ -82,6 +108,59 @@ export default function PedidoDetalle() {
     }
     setForm(movVacio)
     setModalOpen(false)
+    cargarTodo()
+  }
+
+  function abrirModalPrendas() {
+    setItemsEdit(rawItems.length > 0 ? rawItems.map(ri => ({ ...ri })) : [{ ...itemVacio }])
+    setModalPrendasOpen(true)
+  }
+
+  function actualizarItemEdit(index, campo, valor) {
+    const nuevos = [...itemsEdit]
+    nuevos[index] = { ...nuevos[index], [campo]: valor }
+    setItemsEdit(nuevos)
+  }
+
+  async function guardarPrendas(e) {
+    e.preventDefault()
+    setGuardando(true)
+
+    const itemsAInsertar = itemsEdit
+      .filter((it) => it.prenda_id)
+      .map((it) => ({
+        pedido_id: id,
+        prenda_id: it.prenda_id,
+        talla_id: it.talla_id || null,
+        color_id: it.color_id || null,
+        tipo_prenda_id: it.tipo_prenda_id || null,
+        calidad_tela_id: it.calidad_tela_id || null,
+        cantidad: Number(it.cantidad),
+        precio_unitario: Number(it.precio_unitario)
+      }))
+
+    if (itemsAInsertar.length === 0) {
+      alert('Debes agregar al menos una prenda al pedido')
+      setGuardando(false)
+      return
+    }
+
+    const nuevoCostoTotal = itemsAInsertar.reduce((acc, it) => acc + (it.cantidad * it.precio_unitario), 0)
+
+    // Reemplazamos todos los items borrando los viejos y creando los nuevos
+    await supabase.from('items_pedido').delete().eq('pedido_id', id)
+    const { error: errItems } = await supabase.from('items_pedido').insert(itemsAInsertar)
+    
+    if (errItems) {
+      alert('Error guardando prendas: ' + errItems.message)
+      setGuardando(false)
+      return
+    }
+
+    await supabase.from('pedidos').update({ costo_total: nuevoCostoTotal }).eq('id', id)
+
+    setGuardando(false)
+    setModalPrendasOpen(false)
     cargarTodo()
   }
 
@@ -175,7 +254,15 @@ export default function PedidoDetalle() {
       </div>
 
       <div>
-        <h2 className="label-premium" style={{ marginBottom: '12px' }}>Prendas</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <h2 className="label-premium" style={{ margin: 0 }}>Prendas</h2>
+          <button
+            onClick={abrirModalPrendas}
+            style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            Editar
+          </button>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {items.map((it) => (
             <div key={it.id} className="card-premium" style={{ padding: '16px' }}>
@@ -194,6 +281,11 @@ export default function PedidoDetalle() {
               </div>
             </div>
           ))}
+          {items.length === 0 && (
+            <div className="flex-center" style={{ padding: '20px 0' }}>
+              <p className="text-secondary">No hay prendas registradas.</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -249,6 +341,75 @@ export default function PedidoDetalle() {
           {eliminando ? 'Eliminando...' : 'Eliminar Pedido'}
         </button>
       </div>
+
+      <Modal open={modalPrendasOpen} onClose={() => setModalPrendasOpen(false)} title="Editar Prendas">
+        <form onSubmit={guardarPrendas} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '50vh', overflowY: 'auto', paddingRight: '4px' }}>
+            {itemsEdit.map((it, i) => (
+              <div key={i} style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', position: 'relative', backgroundColor: 'rgba(255,255,255,0.02)' }}>
+                {itemsEdit.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setItemsEdit(itemsEdit.filter((_, idx) => idx !== i))}
+                    style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  >
+                    ×
+                  </button>
+                )}
+                <div className="grid grid-cols-2 gap-3" style={{ marginBottom: '12px' }}>
+                  <select required value={it.prenda_id || ''} onChange={(e) => actualizarItemEdit(i, 'prenda_id', e.target.value)} className="input-premium" style={{ padding: '8px' }}>
+                    <option value="">Prenda...</option>
+                    {prendas.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </select>
+                  <select value={it.talla_id || ''} onChange={(e) => actualizarItemEdit(i, 'talla_id', e.target.value)} className="input-premium" style={{ padding: '8px' }}>
+                    <option value="">Talla...</option>
+                    {tallas.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                  </select>
+                  <select value={it.color_id || ''} onChange={(e) => actualizarItemEdit(i, 'color_id', e.target.value)} className="input-premium" style={{ padding: '8px' }}>
+                    <option value="">Color...</option>
+                    {colores.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                  <select value={it.tipo_prenda_id || ''} onChange={(e) => actualizarItemEdit(i, 'tipo_prenda_id', e.target.value)} className="input-premium" style={{ padding: '8px' }}>
+                    <option value="">Corte...</option>
+                    {tiposPrenda.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                  </select>
+                  <select value={it.calidad_tela_id || ''} onChange={(e) => actualizarItemEdit(i, 'calidad_tela_id', e.target.value)} className="input-premium" style={{ padding: '8px', gridColumn: 'span 2' }}>
+                    <option value="">Calidad tela...</option>
+                    {calidades.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label-premium" style={{ fontSize: '11px' }}>Cantidad</label>
+                    <input type="number" min={1} required value={it.cantidad} onChange={(e) => actualizarItemEdit(i, 'cantidad', e.target.value)} className="input-premium" style={{ padding: '8px' }} />
+                  </div>
+                  <div>
+                    <label className="label-premium" style={{ fontSize: '11px' }}>Precio U. (S/)</label>
+                    <input type="number" min={0} step="0.01" required value={it.precio_unitario} onChange={(e) => actualizarItemEdit(i, 'precio_unitario', e.target.value)} className="input-premium" style={{ padding: '8px' }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setItemsEdit([...itemsEdit, { ...itemVacio }])}
+            style={{ background: 'transparent', border: '1px dashed var(--border-color)', color: 'var(--text-secondary)', padding: '12px', borderRadius: 'var(--radius-md)', cursor: 'pointer', fontFamily: 'var(--font-heading)', fontWeight: '600' }}
+          >
+            + Agregar otra prenda
+          </button>
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+            <p style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--accent-gold)' }}>
+              Total: S/ {itemsEdit.reduce((acc, it) => acc + (Number(it.cantidad || 0) * Number(it.precio_unitario || 0)), 0).toFixed(2)}
+            </p>
+          </div>
+
+          <button type="submit" disabled={guardando} className="btn-primary" style={{ marginTop: '8px' }}>
+            {guardando ? 'Guardando...' : 'Guardar Prendas'}
+          </button>
+        </form>
+      </Modal>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Agregar movimiento">
         <form onSubmit={guardarMovimiento} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
