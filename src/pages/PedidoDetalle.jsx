@@ -274,32 +274,33 @@ export default function PedidoDetalle() {
             {e.label}
           </button>
         ))}
-        
-        <button
-          onClick={generarCotizacion}
-          style={{
-            padding: '8px 16px',
-            borderRadius: 'var(--radius-full)',
-            fontSize: '13px',
-            fontWeight: '600',
-            fontFamily: 'var(--font-heading)',
-            whiteSpace: 'nowrap',
-            border: 'none',
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            background: 'var(--accent-gold)',
-            color: '#000',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Cotización
-        </button>
       </div>
+
+      <button
+        onClick={generarCotizacion}
+        className="animate-slide-up"
+        style={{
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '14px',
+          borderRadius: 'var(--radius-md)',
+          backgroundColor: 'var(--accent-gold)',
+          color: '#000',
+          fontWeight: 'bold',
+          fontSize: '16px',
+          border: 'none',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(212, 175, 55, 0.3)'
+        }}
+      >
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Generar Cotización
+      </button>
 
       <div className="card-premium animate-slide-up" style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <div>
