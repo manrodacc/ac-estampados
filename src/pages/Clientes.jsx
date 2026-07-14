@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import Modal from '../components/Modal'
 
-const vacio = { nombre: '', telefono: '', direccion: '', notas: '' }
+const vacio = { id: null, nombre: '', telefono: '', direccion: '', notas: '' }
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([])
@@ -29,15 +29,40 @@ export default function Clientes() {
   async function guardarCliente(e) {
     e.preventDefault()
     setGuardando(true)
-    const { error } = await supabase.from('clientes').insert([form])
+    
+    let error
+    if (form.id) {
+      // Editar
+      const { id, created_at, ...updateData } = form // quitar id y created_at por si acaso
+      const res = await supabase.from('clientes').update(updateData).eq('id', id)
+      error = res.error
+    } else {
+      // Crear nuevo
+      const { id, ...insertData } = form
+      const res = await supabase.from('clientes').insert([insertData])
+      error = res.error
+    }
+
     setGuardando(false)
+    
     if (error) {
       alert('Error al guardar: ' + error.message)
       return
     }
+    
     setForm(vacio)
     setModalOpen(false)
     cargarClientes()
+  }
+
+  function abrirNuevoCliente() {
+    setForm(vacio)
+    setModalOpen(true)
+  }
+
+  function abrirEditarCliente(cliente) {
+    setForm(cliente)
+    setModalOpen(true)
   }
 
   const filtrados = clientes.filter((c) =>
@@ -82,6 +107,15 @@ export default function Clientes() {
                   {c.telefono && <p className="text-secondary" style={{ fontSize: '13px', marginTop: '2px' }}>📞 {c.telefono}</p>}
                   {c.direccion && <p className="text-secondary" style={{ fontSize: '13px', marginTop: '2px' }}>📍 {c.direccion}</p>}
                 </div>
+                <button
+                  onClick={() => abrirEditarCliente(c)}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', padding: '8px', cursor: 'pointer' }}
+                  aria-label="Editar cliente"
+                >
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
               </div>
             </div>
           ))}
@@ -95,7 +129,7 @@ export default function Clientes() {
 
       {/* Floating Action Button */}
       <button
-        onClick={() => setModalOpen(true)}
+        onClick={abrirNuevoCliente}
         style={{
           position: 'fixed',
           bottom: 'calc(var(--nav-height) + 20px)',
@@ -123,13 +157,13 @@ export default function Clientes() {
         </svg>
       </button>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nuevo cliente">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? "Editar cliente" : "Nuevo cliente"}>
         <form onSubmit={guardarCliente} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label className="label-premium">Nombre</label>
             <input
               required
-              value={form.nombre}
+              value={form.nombre || ''}
               onChange={(e) => setForm({ ...form, nombre: e.target.value })}
               className="input-premium"
             />
@@ -137,7 +171,7 @@ export default function Clientes() {
           <div>
             <label className="label-premium">Teléfono</label>
             <input
-              value={form.telefono}
+              value={form.telefono || ''}
               onChange={(e) => setForm({ ...form, telefono: e.target.value })}
               className="input-premium"
               type="tel"
@@ -146,7 +180,7 @@ export default function Clientes() {
           <div>
             <label className="label-premium">Dirección</label>
             <input
-              value={form.direccion}
+              value={form.direccion || ''}
               onChange={(e) => setForm({ ...form, direccion: e.target.value })}
               className="input-premium"
             />
@@ -154,7 +188,7 @@ export default function Clientes() {
           <div>
             <label className="label-premium">Notas</label>
             <textarea
-              value={form.notas}
+              value={form.notas || ''}
               onChange={(e) => setForm({ ...form, notas: e.target.value })}
               className="input-premium"
               rows={2}
