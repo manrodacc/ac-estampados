@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabaseClient'
 import { formatMoney, formatDate, ESTADOS } from '../lib/format'
 import EstadoBadge from '../components/EstadoBadge'
 import Modal from '../components/Modal'
+import { useRef } from 'react'
+import html2canvas from 'html2canvas'
+import CotizacionTemplate from '../components/CotizacionTemplate'
 
 const movVacio = { tipo: 'egreso', categoria_id: '', concepto: '', monto: '', fecha: '' }
 const itemVacio = { prenda_id: '', talla_id: '', color_id: '', tipo_prenda_id: '', calidad_tela_id: '', cantidad: 1, precio_unitario: 0 }
@@ -29,6 +32,12 @@ export default function PedidoDetalle() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [modalPrendasOpen, setModalPrendasOpen] = useState(false)
+  const [modalCotizacionOpen, setModalCotizacionOpen] = useState(false)
+  const [imagenCotizacion, setImagenCotizacion] = useState(null)
+  const [generandoImagen, setGenerandoImagen] = useState(false)
+  
+  const cotizacionRef = useRef(null)
+
   const [form, setForm] = useState(movVacio)
   const [itemsEdit, setItemsEdit] = useState([])
   const [guardando, setGuardando] = useState(false)
@@ -180,11 +189,44 @@ export default function PedidoDetalle() {
     }
   }
 
+  async function generarCotizacion() {
+    if (!cotizacionRef.current) return
+    setImagenCotizacion(null)
+    setGenerandoImagen(true)
+    setModalCotizacionOpen(true)
+    try {
+      const canvas = await html2canvas(cotizacionRef.current, {
+        scale: 2, 
+        useCORS: true,
+        backgroundColor: '#0f0f13'
+      })
+      setImagenCotizacion(canvas.toDataURL('image/jpeg', 0.9))
+    } catch (error) {
+      alert('Error al generar la imagen: ' + error.message)
+    } finally {
+      setGenerandoImagen(false)
+    }
+  }
+
+  function descargarCotizacion() {
+    if (!imagenCotizacion) return
+    const link = document.createElement('a')
+    link.download = `Cotizacion_${cliente?.nombre.replace(/\s+/g, '_')}_${resumen?.pedido_id.slice(0,6)}.jpg`
+    link.href = imagenCotizacion
+    link.click()
+  }
+
   if (loading) return <div className="flex-center" style={{ height: '50vh' }}><p className="text-secondary animate-fade-in">Cargando pedido...</p></div>
   if (!resumen) return <div className="flex-center" style={{ height: '50vh' }}><p className="text-danger">Pedido no encontrado.</p></div>
 
   return (
     <div style={{ paddingBottom: '80px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* Cotización Oculta para html2canvas */}
+      <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+        <CotizacionTemplate ref={cotizacionRef} resumen={resumen} cliente={cliente} items={items} />
+      </div>
+
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div style={{ flex: 1, paddingRight: '12px' }}>
           <h1 style={{ fontSize: '24px', marginBottom: '4px' }}>{resumen.titulo || 'Sin título'}</h1>
@@ -232,6 +274,31 @@ export default function PedidoDetalle() {
             {e.label}
           </button>
         ))}
+        
+        <button
+          onClick={generarCotizacion}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-full)',
+            fontSize: '13px',
+            fontWeight: '600',
+            fontFamily: 'var(--font-heading)',
+            whiteSpace: 'nowrap',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            background: 'var(--accent-gold)',
+            color: '#000',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Cotización
+        </button>
       </div>
 
       <div className="card-premium animate-slide-up" style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -493,6 +560,35 @@ export default function PedidoDetalle() {
             {guardando ? 'Guardando...' : 'Guardar'}
           </button>
         </form>
+      </Modal>
+
+      <Modal open={modalCotizacionOpen} onClose={() => setModalCotizacionOpen(false)} title="Generar Cotización">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
+          {generandoImagen ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <p>Generando imagen de alta calidad...</p>
+              <div style={{ width: '40px', height: '40px', border: '3px solid var(--border-color)', borderTopColor: 'var(--accent-gold)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '20px auto' }}></div>
+            </div>
+          ) : imagenCotizacion ? (
+            <>
+              <div style={{ width: '100%', maxHeight: '50vh', overflowY: 'auto', borderRadius: '12px', border: '1px solid var(--border-color)', backgroundColor: '#000' }}>
+                <img src={imagenCotizacion} alt="Cotización" style={{ width: '100%', display: 'block' }} />
+              </div>
+              <button
+                onClick={descargarCotizacion}
+                className="btn-primary"
+                style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '8px', padding: '16px' }}
+              >
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Descargar Cotización (JPG)
+              </button>
+            </>
+          ) : (
+            <p className="text-danger">Hubo un problema al generar la cotización.</p>
+          )}
+        </div>
       </Modal>
     </div>
   )
