@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { formatMoney, formatDate, ESTADOS } from '../lib/format'
 import EstadoBadge from '../components/EstadoBadge'
@@ -9,6 +9,7 @@ const movVacio = { tipo: 'egreso', categoria_id: '', concepto: '', monto: '', fe
 
 export default function PedidoDetalle() {
   const { id } = useParams()
+  const navigate = useNavigate()
 
   const [resumen, setResumen] = useState(null)
   const [cliente, setCliente] = useState(null)
@@ -19,6 +20,7 @@ export default function PedidoDetalle() {
   const [modalOpen, setModalOpen] = useState(false)
   const [form, setForm] = useState(movVacio)
   const [guardando, setGuardando] = useState(false)
+  const [eliminando, setEliminando] = useState(false)
 
   useEffect(() => {
     cargarTodo()
@@ -81,6 +83,22 @@ export default function PedidoDetalle() {
     setForm(movVacio)
     setModalOpen(false)
     cargarTodo()
+  }
+
+  async function eliminarPedido() {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este pedido? Esta acción no se puede deshacer y eliminará todos sus movimientos asociados.')) {
+      return
+    }
+    
+    setEliminando(true)
+    const { error } = await supabase.from('pedidos').delete().eq('id', id)
+    
+    if (error) {
+      alert('Error al eliminar el pedido: ' + error.message)
+      setEliminando(false)
+    } else {
+      navigate('/pedidos')
+    }
   }
 
   if (loading) return <div className="flex-center" style={{ height: '50vh' }}><p className="text-secondary animate-fade-in">Cargando pedido...</p></div>
@@ -208,6 +226,25 @@ export default function PedidoDetalle() {
             </div>
           )}
         </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
+        <button
+          onClick={eliminarPedido}
+          disabled={eliminando}
+          style={{ 
+            background: 'none', 
+            border: 'none', 
+            color: 'var(--danger)', 
+            fontSize: '14px', 
+            fontWeight: '600', 
+            cursor: eliminando ? 'not-allowed' : 'pointer',
+            padding: '12px',
+            opacity: eliminando ? 0.5 : 1
+          }}
+        >
+          {eliminando ? 'Eliminando...' : 'Eliminar Pedido'}
+        </button>
       </div>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Agregar movimiento">

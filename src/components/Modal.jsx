@@ -1,4 +1,17 @@
+import { useEffect } from 'react'
+
 export default function Modal({ open, onClose, title, children }) {
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [open])
+
   if (!open) return null
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
@@ -16,9 +29,11 @@ export default function Modal({ open, onClose, title, children }) {
           borderTopLeftRadius: '24px', 
           borderTopRightRadius: '24px',
           padding: '24px',
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
           boxShadow: '0 -10px 25px rgba(0,0,0,0.5)',
           maxHeight: '90vh',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          overscrollBehavior: 'contain'
         }}
       >
         <div style={{ width: '40px', height: '4px', backgroundColor: 'var(--border-color)', borderRadius: '2px', margin: '0 auto 20px' }} />
