@@ -107,9 +107,12 @@ export default function PedidoDetalle() {
   return (
     <div style={{ paddingBottom: '80px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={{ fontSize: '24px', marginBottom: '4px' }}>{resumen.cliente_nombre}</h1>
-          <p className="text-secondary" style={{ fontSize: '14px' }}>Pedido del {formatDate(resumen.fecha_pedido)}</p>
+        <div style={{ flex: 1, paddingRight: '12px' }}>
+          <h1 style={{ fontSize: '24px', marginBottom: '4px' }}>{resumen.titulo || 'Sin título'}</h1>
+          <p className="text-secondary" style={{ fontSize: '15px' }}>
+            Cliente: <span style={{ color: 'var(--text-primary)' }}>{resumen.cliente_nombre}</span>
+          </p>
+          <p className="text-secondary" style={{ fontSize: '13px', marginTop: '2px' }}>Pedido del {formatDate(resumen.fecha_pedido)}</p>
         </div>
         <EstadoBadge estado={resumen.estado} />
       </div>

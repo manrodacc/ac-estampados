@@ -85,12 +85,17 @@ export default function Pedidos() {
               className="card-premium animate-slide-up"
               style={{ display: 'block', textDecoration: 'none', padding: '16px' }}
             >
-              <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
-                <p style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '16px' }}>{p.cliente_nombre}</p>
+              <div className="flex items-center justify-between" style={{ marginBottom: '4px' }}>
+                <p style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '16px', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>
+                  {p.titulo || 'Sin título'}
+                </p>
                 <EstadoBadge estado={p.estado} />
               </div>
+              <div style={{ marginBottom: '8px' }}>
+                <p className="text-secondary" style={{ fontSize: '13px' }}>Cliente: <span style={{ color: 'var(--text-primary)' }}>{p.cliente_nombre}</span></p>
+              </div>
               <div className="flex items-center justify-between">
-                <p className="text-secondary" style={{ fontSize: '13px' }}>{formatDate(p.fecha_pedido)}</p>
+                <p className="text-secondary" style={{ fontSize: '12px' }}>{formatDate(p.fecha_pedido)}</p>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontSize: '15px', fontWeight: 'bold', color: 'var(--accent-gold)' }}>{formatMoney(p.costo_total)}</p>
                   <p className="text-muted" style={{ fontSize: '12px' }}>

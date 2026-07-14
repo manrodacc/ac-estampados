@@ -23,6 +23,7 @@ export default function NuevoPedido() {
   const [calidades, setCalidades] = useState([])
 
   const [clienteId, setClienteId] = useState('')
+  const [titulo, setTitulo] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [notas, setNotas] = useState('')
   const [items, setItems] = useState([{ ...itemVacio }])
@@ -74,6 +75,10 @@ export default function NuevoPedido() {
       alert('Selecciona un cliente')
       return
     }
+    if (!titulo) {
+      alert('Debes ingresar un título para el pedido')
+      return
+    }
     setGuardando(true)
 
     const { data: pedido, error: errPedido } = await supabase
@@ -81,6 +86,7 @@ export default function NuevoPedido() {
       .insert([
         {
           cliente_id: clienteId,
+          titulo: titulo,
           fecha_entrega_estimada: fechaEntrega || null,
           notas,
           costo_total: costoTotal,
@@ -117,6 +123,19 @@ export default function NuevoPedido() {
 
       <form onSubmit={guardarPedido} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div className="card-premium animate-slide-up" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          <div>
+            <label className="label-premium">Título del pedido</label>
+            <input
+              required
+              type="text"
+              placeholder="Ej: Polos deportivos azules..."
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              className="input-premium"
+            />
+          </div>
+
           <div>
             <label className="label-premium">Cliente</label>
             <select
