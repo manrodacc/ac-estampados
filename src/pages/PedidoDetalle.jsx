@@ -49,8 +49,9 @@ export default function PedidoDetalle() {
 
   async function cargarTodo() {
     setLoading(true)
-    const [r, it, raw, mv, cat, p, t, col, tp, ct] = await Promise.all([
+    const [r, p_raw, it, raw, mv, cat, p, t, col, tp, ct] = await Promise.all([
       supabase.from('vista_resumen_pedido').select('*').eq('pedido_id', id).single(),
+      supabase.from('pedidos').select('fecha_entrega_estimada, notas').eq('id', id).single(),
       supabase.from('vista_items_pedido').select('*').eq('pedido_id', id),
       supabase.from('items_pedido').select('*').eq('pedido_id', id),
       supabase
@@ -66,7 +67,8 @@ export default function PedidoDetalle() {
       supabase.from('calidades_tela').select('id, nombre').eq('activo', true).order('nombre'),
     ])
     
-    setResumen(r.data)
+    // Merge the view data with the direct table data (to get fecha_entrega_estimada even if view is outdated)
+    setResumen({ ...r.data, ...p_raw.data })
     setItems(it.data || [])
     setRawItems(raw.data || [])
     setMovimientos(mv.data || [])
