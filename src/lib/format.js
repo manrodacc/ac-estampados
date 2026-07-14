@@ -5,7 +5,8 @@ export function formatMoney(value) {
 
 export function formatDate(value) {
   if (!value) return '—'
-  const d = new Date(value + 'T00:00:00')
+  const dateStr = value.includes('T') ? value : value + 'T00:00:00'
+  const d = new Date(dateStr)
   return d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
