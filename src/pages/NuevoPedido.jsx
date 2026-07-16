@@ -10,6 +10,8 @@ const itemVacio = {
   calidad_tela_id: '',
   cantidad: 1,
   precio_unitario: 0,
+  precio_total: 0,
+  modo_precio: 'unitario',
 }
 
 export default function NuevoPedido() {
@@ -23,6 +25,7 @@ export default function NuevoPedido() {
   const [calidades, setCalidades] = useState([])
 
   const [clienteId, setClienteId] = useState('')
+  const [tipoServicio, setTipoServicio] = useState('estampado_polo')
   const [titulo, setTitulo] = useState('')
   const [fechaEntrega, setFechaEntrega] = useState('')
   const [notas, setNotas] = useState('')
@@ -52,9 +55,31 @@ export default function NuevoPedido() {
 
   function actualizarItem(index, campo, valor) {
     const nuevos = [...items]
-    nuevos[index] = { ...nuevos[index], [campo]: valor }
+    const item = { ...nuevos[index] }
+    
+    if (campo === 'modo_precio') {
+      item.modo_precio = valor
+    } else if (campo === 'precio_unitario') {
+      item.precio_unitario = valor
+      if (item.cantidad > 0) item.precio_total = (valor * item.cantidad).toFixed(2)
+    } else if (campo === 'precio_total') {
+      item.precio_total = valor
+      if (item.cantidad > 0) item.precio_unitario = (valor / item.cantidad).toFixed(2)
+    } else if (campo === 'cantidad') {
+      item.cantidad = valor
+      if (item.modo_precio === 'unitario') {
+         item.precio_total = (item.precio_unitario * valor).toFixed(2)
+      } else {
+         item.precio_unitario = (item.precio_total / valor).toFixed(2)
+      }
+    } else {
+      item[campo] = valor
+    }
+    
+    nuevos[index] = item
     setItems(nuevos)
   }
+
 
   function agregarItem() {
     setItems([...items, { ...itemVacio }])
@@ -86,7 +111,7 @@ export default function NuevoPedido() {
       .insert([
         {
           cliente_id: clienteId,
-          titulo: titulo,
+          titulo: `[${tipoServicio === 'estampado_polo' ? 'Estampado + Polo' : 'Solo Estampado'}] ${titulo}`,
           fecha_entrega_estimada: fechaEntrega || null,
           notas,
           costo_total: costoTotal,
@@ -125,6 +150,18 @@ export default function NuevoPedido() {
         <div className="card-premium animate-slide-up" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
           <div>
+            <label className="label-premium" style={{ marginBottom: '8px', display: 'block' }}>Tipo de servicio</label>
+            <div style={{ display: 'flex', gap: '16px', marginBottom: '8px' }}>
+              <label className="label-premium" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, textTransform: 'none' }}>
+                <input type="radio" name="tipoServicio" value="estampado_polo" checked={tipoServicio === 'estampado_polo'} onChange={(e) => setTipoServicio(e.target.value)} />
+                Estampado + Polo
+              </label>
+              <label className="label-premium" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', margin: 0, textTransform: 'none' }}>
+                <input type="radio" name="tipoServicio" value="solo_estampado" checked={tipoServicio === 'solo_estampado'} onChange={(e) => setTipoServicio(e.target.value)} />
+                Solo Estampado
+              </label>
+            </div>
+            
             <label className="label-premium">Título del pedido</label>
             <input
               required
@@ -230,8 +267,18 @@ export default function NuevoPedido() {
                     <input type="number" min={1} value={it.cantidad} onChange={(e) => actualizarItem(i, 'cantidad', e.target.value)} className="input-premium" style={{ padding: '8px' }} />
                   </div>
                   <div>
-                    <label className="label-premium" style={{ fontSize: '11px' }}>Precio U. (S/)</label>
-                    <input type="number" min={0} step="0.01" value={it.precio_unitario} onChange={(e) => actualizarItem(i, 'precio_unitario', e.target.value)} className="input-premium" style={{ padding: '8px' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <label className="label-premium" style={{ fontSize: '11px', margin: 0 }}>Precio (S/)</label>
+                      <select value={it.modo_precio || 'unitario'} onChange={(e) => actualizarItem(i, 'modo_precio', e.target.value)} style={{ fontSize: '11px', background: 'transparent', color: 'var(--accent-gold)', border: 'none', cursor: 'pointer', outline: 'none', fontWeight: 'bold' }}>
+                        <option value="unitario">Unitario</option>
+                        <option value="total">Total</option>
+                      </select>
+                    </div>
+                    {it.modo_precio === 'unitario' || !it.modo_precio ? (
+                      <input type="number" min={0} step="0.01" value={it.precio_unitario} onChange={(e) => actualizarItem(i, 'precio_unitario', e.target.value)} className="input-premium" style={{ padding: '8px' }} placeholder="Precio U." />
+                    ) : (
+                      <input type="number" min={0} step="0.01" value={it.precio_total} onChange={(e) => actualizarItem(i, 'precio_total', e.target.value)} className="input-premium" style={{ padding: '8px' }} placeholder="Precio Total" />
+                    )}
                   </div>
                 </div>
               </div>

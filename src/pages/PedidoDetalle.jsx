@@ -9,7 +9,7 @@ import html2canvas from 'html2canvas'
 import CotizacionTemplate from '../components/CotizacionTemplate'
 
 const movVacio = { tipo: 'egreso', categoria_id: '', concepto: '', monto: '', fecha: '' }
-const itemVacio = { prenda_id: '', talla_id: '', color_id: '', tipo_prenda_id: '', calidad_tela_id: '', cantidad: 1, precio_unitario: 0 }
+const itemVacio = { prenda_id: '', talla_id: '', color_id: '', tipo_prenda_id: '', calidad_tela_id: '', cantidad: 1, precio_unitario: 0, precio_total: 0, modo_precio: 'unitario' }
 
 export default function PedidoDetalle() {
   const { id } = useParams()
@@ -42,6 +42,8 @@ export default function PedidoDetalle() {
   const [itemsEdit, setItemsEdit] = useState([])
   const [guardando, setGuardando] = useState(false)
   const [eliminando, setEliminando] = useState(false)
+  const [editandoFecha, setEditandoFecha] = useState(false)
+  const [nuevaFecha, setNuevaFecha] = useState('')
 
   useEffect(() => {
     cargarTodo()
@@ -129,8 +131,38 @@ export default function PedidoDetalle() {
 
   function actualizarItemEdit(index, campo, valor) {
     const nuevos = [...itemsEdit]
-    nuevos[index] = { ...nuevos[index], [campo]: valor }
+    const item = { ...nuevos[index] }
+    
+    if (campo === 'modo_precio') {
+      item.modo_precio = valor
+    } else if (campo === 'precio_unitario') {
+      item.precio_unitario = valor
+      if (item.cantidad > 0) item.precio_total = (valor * item.cantidad).toFixed(2)
+    } else if (campo === 'precio_total') {
+      item.precio_total = valor
+      if (item.cantidad > 0) item.precio_unitario = (valor / item.cantidad).toFixed(2)
+    } else if (campo === 'cantidad') {
+      item.cantidad = valor
+      if (item.modo_precio === 'unitario') {
+         item.precio_total = (item.precio_unitario * valor).toFixed(2)
+      } else {
+         item.precio_unitario = (item.precio_total / valor).toFixed(2)
+      }
+    } else {
+      item[campo] = valor
+    }
+    
+    nuevos[index] = item
     setItemsEdit(nuevos)
+  }
+
+  async function guardarFecha() {
+    const { error } = await supabase.from('pedidos').update({ fecha_entrega_estimada: nuevaFecha || null }).eq('id', id)
+    if (error) alert('Error: ' + error.message)
+    else {
+      setEditandoFecha(false)
+      cargarTodo()
+    }
   }
 
   async function guardarPrendas(e) {
@@ -235,7 +267,26 @@ export default function PedidoDetalle() {
           <p className="text-secondary" style={{ fontSize: '15px' }}>
             Cliente: <span style={{ color: 'var(--text-primary)' }}>{resumen.cliente_nombre}</span>
           </p>
-          <p className="text-secondary" style={{ fontSize: '13px', marginTop: '2px' }}>Pedido del {formatDate(resumen.fecha_pedido)}</p>
+          <div className="text-secondary" style={{ fontSize: '13px', marginTop: '2px' }}>
+            Pedido del {formatDate(resumen.fecha_pedido)}
+            <div style={{ marginTop: '4px' }}>
+              Entrega estimada:{' '}
+              {editandoFecha ? (
+                <span style={{ display: 'inline-flex', gap: '8px', alignItems: 'center' }}>
+                  <input type="date" value={nuevaFecha} onChange={e => setNuevaFecha(e.target.value)} className="input-premium" style={{ padding: '2px 8px', fontSize: '12px' }} />
+                  <button onClick={guardarFecha} style={{ background: 'var(--success)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer' }}>✓</button>
+                  <button onClick={() => setEditandoFecha(false)} style={{ background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer' }}>×</button>
+                </span>
+              ) : (
+                <span>
+                  <span style={{ color: resumen.fecha_entrega_estimada ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                    {resumen.fecha_entrega_estimada ? formatDate(resumen.fecha_entrega_estimada) : 'No definida'}
+                  </span>
+                  <button onClick={() => { setNuevaFecha(resumen.fecha_entrega_estimada || ''); setEditandoFecha(true); }} style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', marginLeft: '8px', cursor: 'pointer', fontSize: '12px', textDecoration: 'underline' }}>Editar</button>
+                </span>
+              )}
+            </div>
+          </div>
         </div>
         <EstadoBadge estado={resumen.estado} />
       </div>
@@ -377,7 +428,7 @@ export default function PedidoDetalle() {
                 <div style={{ display: 'flex', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                   <span>{formatDate(m.fecha)}</span>
                   <span>•</span>
-                  <span>{m.categorias_movimiento?.nombre || 'General'}</span>
+                  <span>{m.categorias_movimiento?.nombre === 'Compra de tela' ? 'Comprar polos' : (m.categorias_movimiento?.nombre || 'General')}</span>
                 </div>
               </div>
               <p style={{ fontWeight: 'bold', fontSize: '16px', color: m.tipo === 'ingreso' ? 'var(--success)' : 'var(--danger)' }}>
@@ -454,8 +505,18 @@ export default function PedidoDetalle() {
                     <input type="number" min={1} required value={it.cantidad} onChange={(e) => actualizarItemEdit(i, 'cantidad', e.target.value)} className="input-premium" style={{ padding: '8px' }} />
                   </div>
                   <div>
-                    <label className="label-premium" style={{ fontSize: '11px' }}>Precio U. (S/)</label>
-                    <input type="number" min={0} step="0.01" required value={it.precio_unitario} onChange={(e) => actualizarItemEdit(i, 'precio_unitario', e.target.value)} className="input-premium" style={{ padding: '8px' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <label className="label-premium" style={{ fontSize: '11px', margin: 0 }}>Precio (S/)</label>
+                      <select value={it.modo_precio || 'unitario'} onChange={(e) => actualizarItemEdit(i, 'modo_precio', e.target.value)} style={{ fontSize: '11px', background: 'transparent', color: 'var(--accent-gold)', border: 'none', cursor: 'pointer', outline: 'none', fontWeight: 'bold' }}>
+                        <option value="unitario">Unitario</option>
+                        <option value="total">Total</option>
+                      </select>
+                    </div>
+                    {it.modo_precio === 'unitario' || !it.modo_precio ? (
+                      <input type="number" min={0} step="0.01" required value={it.precio_unitario} onChange={(e) => actualizarItemEdit(i, 'precio_unitario', e.target.value)} className="input-premium" style={{ padding: '8px' }} placeholder="Precio U." />
+                    ) : (
+                      <input type="number" min={0} step="0.01" required value={it.precio_total} onChange={(e) => actualizarItemEdit(i, 'precio_total', e.target.value)} className="input-premium" style={{ padding: '8px' }} placeholder="Precio Total" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -518,7 +579,7 @@ export default function PedidoDetalle() {
               {categorias
                 .filter((c) => c.tipo === form.tipo)
                 .map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                  <option key={c.id} value={c.id}>{c.nombre === 'Compra de tela' ? 'Comprar polos' : c.nombre}</option>
                 ))}
             </select>
           </div>
