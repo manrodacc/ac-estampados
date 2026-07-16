@@ -44,6 +44,9 @@ export default function PedidoDetalle() {
   const [eliminando, setEliminando] = useState(false)
   const [editandoFecha, setEditandoFecha] = useState(false)
   const [nuevaFecha, setNuevaFecha] = useState('')
+  const [errorGlobal, setErrorGlobal] = useState('')
+  const [errorPrendas, setErrorPrendas] = useState('')
+  const [errorMovimiento, setErrorMovimiento] = useState('')
 
   useEffect(() => {
     cargarTodo()
@@ -94,15 +97,17 @@ export default function PedidoDetalle() {
   }
 
   async function cambiarEstado(nuevoEstado) {
+    setErrorGlobal('')
     const patch = { estado: nuevoEstado }
     if (nuevoEstado === 'entregado') patch.fecha_entregado = new Date().toISOString().slice(0, 10)
     const { error } = await supabase.from('pedidos').update(patch).eq('id', id)
-    if (error) alert('Error: ' + error.message)
+    if (error) setErrorGlobal('Error: ' + error.message)
     else cargarTodo()
   }
 
   async function guardarMovimiento(e) {
     e.preventDefault()
+    setErrorMovimiento('')
     setGuardando(true)
     const { error } = await supabase.from('movimientos').insert([
       {
@@ -116,7 +121,7 @@ export default function PedidoDetalle() {
     ])
     setGuardando(false)
     if (error) {
-      alert('Error al guardar movimiento: ' + error.message)
+      setErrorMovimiento('Error al guardar movimiento: ' + error.message)
       return
     }
     setForm(movVacio)
@@ -157,8 +162,9 @@ export default function PedidoDetalle() {
   }
 
   async function guardarFecha() {
+    setErrorGlobal('')
     const { error } = await supabase.from('pedidos').update({ fecha_entrega_estimada: nuevaFecha || null }).eq('id', id)
-    if (error) alert('Error: ' + error.message)
+    if (error) setErrorGlobal('Error: ' + error.message)
     else {
       setEditandoFecha(false)
       cargarTodo()
@@ -167,6 +173,7 @@ export default function PedidoDetalle() {
 
   async function guardarPrendas(e) {
     e.preventDefault()
+    setErrorPrendas('')
     setGuardando(true)
 
     const itemsAInsertar = itemsEdit
@@ -183,7 +190,7 @@ export default function PedidoDetalle() {
       }))
 
     if (itemsAInsertar.length === 0) {
-      alert('Debes agregar al menos una prenda al pedido')
+      setErrorPrendas('Debes agregar al menos una prenda al pedido')
       setGuardando(false)
       return
     }
@@ -195,7 +202,7 @@ export default function PedidoDetalle() {
     const { error: errItems } = await supabase.from('items_pedido').insert(itemsAInsertar)
     
     if (errItems) {
-      alert('Error guardando prendas: ' + errItems.message)
+      setErrorPrendas('Error guardando prendas: ' + errItems.message)
       setGuardando(false)
       return
     }
@@ -212,11 +219,12 @@ export default function PedidoDetalle() {
       return
     }
     
+    setErrorGlobal('')
     setEliminando(true)
     const { error } = await supabase.from('pedidos').delete().eq('id', id)
     
     if (error) {
-      alert('Error al eliminar el pedido: ' + error.message)
+      setErrorGlobal('Error al eliminar el pedido: ' + error.message)
       setEliminando(false)
     } else {
       navigate('/pedidos')
@@ -262,6 +270,13 @@ export default function PedidoDetalle() {
       <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
         <CotizacionTemplate ref={cotizacionRef} resumen={resumen} cliente={cliente} items={items} />
       </div>
+
+      {errorGlobal && (
+        <div className="card-premium animate-fade-in" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--danger)', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ color: 'var(--danger)', fontSize: '20px' }}>⚠️</span>
+          <p style={{ color: 'var(--danger)', fontWeight: 'bold', fontSize: '14px', margin: 0 }}>{errorGlobal}</p>
+        </div>
+      )}
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div style={{ flex: 1, paddingRight: '12px', minWidth: 0 }}>
@@ -472,6 +487,12 @@ export default function PedidoDetalle() {
 
       <Modal open={modalPrendasOpen} onClose={() => setModalPrendasOpen(false)} title="Editar Prendas">
         <form onSubmit={guardarPrendas} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {errorPrendas && (
+            <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger)', padding: '12px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: 'var(--danger)' }}>⚠️</span>
+              <p style={{ color: 'var(--danger)', fontWeight: 'bold', fontSize: '13px', margin: 0 }}>{errorPrendas}</p>
+            </div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '50vh', overflowY: 'auto', paddingRight: '4px' }}>
             {itemsEdit.map((it, i) => (
               <div key={i} style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', position: 'relative', backgroundColor: 'rgba(255,255,255,0.02)' }}>
@@ -551,6 +572,12 @@ export default function PedidoDetalle() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Agregar movimiento">
         <form onSubmit={guardarMovimiento} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {errorMovimiento && (
+            <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger)', padding: '12px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: 'var(--danger)' }}>⚠️</span>
+              <p style={{ color: 'var(--danger)', fontWeight: 'bold', fontSize: '13px', margin: 0 }}>{errorMovimiento}</p>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '8px' }}>
             {['ingreso', 'egreso'].map((t) => (
               <button

@@ -31,6 +31,7 @@ export default function NuevoPedido() {
   const [notas, setNotas] = useState('')
   const [items, setItems] = useState([{ ...itemVacio }])
   const [guardando, setGuardando] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
     cargarCatalogos()
@@ -96,12 +97,13 @@ export default function NuevoPedido() {
 
   async function guardarPedido(e) {
     e.preventDefault()
+    setErrorMsg('')
     if (!clienteId) {
-      alert('Selecciona un cliente')
+      setErrorMsg('Selecciona un cliente')
       return
     }
     if (!titulo) {
-      alert('Debes ingresar un título para el pedido')
+      setErrorMsg('Debes ingresar un título para el pedido')
       return
     }
     setGuardando(true)
@@ -122,7 +124,7 @@ export default function NuevoPedido() {
       .single()
 
     if (errPedido) {
-      alert('Error al crear pedido: ' + errPedido.message)
+      setErrorMsg('Error al crear pedido: ' + errPedido.message)
       setGuardando(false)
       return
     }
@@ -131,7 +133,14 @@ export default function NuevoPedido() {
       .filter((it) => it.prenda_id)
       .map((it) => {
         const { modo_precio, precio_total, ...rest } = it
-        return { ...rest, pedido_id: pedido.id }
+        return { 
+          ...rest, 
+          pedido_id: pedido.id,
+          talla_id: rest.talla_id || null,
+          color_id: rest.color_id || null,
+          tipo_prenda_id: rest.tipo_prenda_id || null,
+          calidad_tela_id: rest.calidad_tela_id || null
+        }
       })
 
     const { error: errItems } = await supabase.from('items_pedido').insert(itemsAInsertar)
@@ -139,7 +148,8 @@ export default function NuevoPedido() {
     setGuardando(false)
 
     if (errItems) {
-      alert('Pedido creado, pero hubo un error con los items: ' + errItems.message)
+      setErrorMsg('Pedido creado, pero hubo un error con las prendas: ' + errItems.message)
+      return
     }
 
     navigate(`/pedidos/${pedido.id}`)
@@ -148,6 +158,13 @@ export default function NuevoPedido() {
   return (
     <div style={{ paddingBottom: '80px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <h1 style={{ fontSize: '24px' }}>Nuevo Pedido</h1>
+
+      {errorMsg && (
+        <div className="card-premium animate-fade-in" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--danger)', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ color: 'var(--danger)', fontSize: '20px' }}>⚠️</span>
+          <p style={{ color: 'var(--danger)', fontWeight: 'bold', fontSize: '14px', margin: 0 }}>{errorMsg}</p>
+        </div>
+      )}
 
       <form onSubmit={guardarPedido} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <div className="card-premium animate-slide-up" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
