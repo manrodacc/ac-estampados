@@ -79,6 +79,12 @@ export default function Dashboard() {
     setErrorMov('')
     setGuardando(true)
     
+    if (form.tipo === 'egreso' && caja && Number(form.monto) > caja.caja_actual) {
+      setErrorMov('Error: Fondos insuficientes. El monto supera el saldo en caja.');
+      setGuardando(false);
+      return;
+    }
+    
     const { error } = await supabase.from('movimientos').insert([
       {
         pedido_id: null,

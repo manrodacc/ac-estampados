@@ -110,6 +110,24 @@ export default function PedidoDetalle() {
     setErrorMovimiento('')
     setGuardando(true)
     
+    // Validar fondos insuficientes para egresos
+    if (form.tipo === 'egreso') {
+      const { data: cajaInfo } = await supabase.from('vista_caja_general').select('caja_actual').single();
+      if (cajaInfo) {
+        let disponible = Number(cajaInfo.caja_actual);
+        if (form.id) {
+          const { data: oldMov } = await supabase.from('movimientos').select('monto, tipo').eq('id', form.id).single();
+          if (oldMov && oldMov.tipo === 'egreso') disponible += Number(oldMov.monto);
+          if (oldMov && oldMov.tipo === 'ingreso') disponible -= Number(oldMov.monto);
+        }
+        if (Number(form.monto) > disponible) {
+          setErrorMovimiento('Error: Fondos insuficientes. El monto supera el saldo en caja.');
+          setGuardando(false);
+          return;
+        }
+      }
+    }
+    
     let error;
     if (form.id) {
       const res = await supabase.from('movimientos').update({
