@@ -207,21 +207,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label className="label-premium">Categoría</label>
-              <select className="input-premium" value={form.categoria_id} onChange={(e) => setForm({ ...form, categoria_id: e.target.value })}>
-                <option value="">(Sin categoría)</option>
-                {categorias.filter(c => c.tipo === form.tipo).map((c) => (
-                  <option key={c.id} value={c.id}>{c.nombre}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label-premium">Fecha</label>
-              <input type="date" className="input-premium" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} />
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Dejar vacío para usar hoy</p>
-            </div>
+          <div>
+            <label className="label-premium">Fecha</label>
+            <input type="date" className="input-premium" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} />
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Dejar vacío para usar hoy</p>
           </div>
 
           <button type="submit" className="btn-primary" disabled={guardando}>
