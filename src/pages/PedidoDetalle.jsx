@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { formatMoney, formatDate, ESTADOS } from '../lib/format'
+import { formatMoney, formatDate, ESTADOS, parseTitulo } from '../lib/format'
 import EstadoBadge from '../components/EstadoBadge'
 import Modal from '../components/Modal'
 import { useRef } from 'react'
@@ -137,16 +137,16 @@ export default function PedidoDetalle() {
       item.modo_precio = valor
     } else if (campo === 'precio_unitario') {
       item.precio_unitario = valor
-      if (item.cantidad > 0) item.precio_total = (valor * item.cantidad).toFixed(2)
+      if (item.cantidad > 0) item.precio_total = valor * item.cantidad
     } else if (campo === 'precio_total') {
       item.precio_total = valor
-      if (item.cantidad > 0) item.precio_unitario = (valor / item.cantidad).toFixed(2)
+      if (item.cantidad > 0) item.precio_unitario = valor / item.cantidad
     } else if (campo === 'cantidad') {
       item.cantidad = valor
       if (item.modo_precio === 'unitario') {
-         item.precio_total = (item.precio_unitario * valor).toFixed(2)
+         item.precio_total = item.precio_unitario * valor
       } else {
-         item.precio_unitario = (item.precio_total / valor).toFixed(2)
+         item.precio_unitario = item.precio_total / valor
       }
     } else {
       item[campo] = valor
@@ -253,6 +253,8 @@ export default function PedidoDetalle() {
   if (loading) return <div className="flex-center" style={{ height: '50vh' }}><p className="text-secondary animate-fade-in">Cargando pedido...</p></div>
   if (!resumen) return <div className="flex-center" style={{ height: '50vh' }}><p className="text-danger">Pedido no encontrado.</p></div>
 
+  const { tag, text } = parseTitulo(resumen.titulo)
+
   return (
     <div style={{ paddingBottom: '80px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
@@ -262,8 +264,13 @@ export default function PedidoDetalle() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div style={{ flex: 1, paddingRight: '12px' }}>
-          <h1 style={{ fontSize: '24px', marginBottom: '4px' }}>{resumen.titulo || 'Sin título'}</h1>
+        <div style={{ flex: 1, paddingRight: '12px', minWidth: 0 }}>
+          {tag && (
+            <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '4px', backgroundColor: 'var(--accent-gold)', color: '#000', fontSize: '11px', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase' }}>
+              {tag}
+            </span>
+          )}
+          <h1 style={{ fontSize: '24px', marginBottom: '4px', wordBreak: 'break-word' }}>{text}</h1>
           <p className="text-secondary" style={{ fontSize: '15px' }}>
             Cliente: <span style={{ color: 'var(--text-primary)' }}>{resumen.cliente_nombre}</span>
           </p>

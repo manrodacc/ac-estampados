@@ -21,3 +21,12 @@ export const ESTADOS = [
 export function estadoInfo(value) {
   return ESTADOS.find((e) => e.value === value) || ESTADOS[0]
 }
+
+export function parseTitulo(titulo) {
+  if (!titulo) return { tag: null, text: 'Sin título' }
+  const match = titulo.match(/^\[(.*?)\] (.*)$/)
+  if (match) {
+    return { tag: match[1], text: match[2] }
+  }
+  return { tag: null, text: titulo }
+}

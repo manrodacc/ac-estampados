@@ -61,16 +61,16 @@ export default function NuevoPedido() {
       item.modo_precio = valor
     } else if (campo === 'precio_unitario') {
       item.precio_unitario = valor
-      if (item.cantidad > 0) item.precio_total = (valor * item.cantidad).toFixed(2)
+      if (item.cantidad > 0) item.precio_total = valor * item.cantidad
     } else if (campo === 'precio_total') {
       item.precio_total = valor
-      if (item.cantidad > 0) item.precio_unitario = (valor / item.cantidad).toFixed(2)
+      if (item.cantidad > 0) item.precio_unitario = valor / item.cantidad
     } else if (campo === 'cantidad') {
       item.cantidad = valor
       if (item.modo_precio === 'unitario') {
-         item.precio_total = (item.precio_unitario * valor).toFixed(2)
+         item.precio_total = item.precio_unitario * valor
       } else {
-         item.precio_unitario = (item.precio_total / valor).toFixed(2)
+         item.precio_unitario = item.precio_total / valor
       }
     } else {
       item[campo] = valor
@@ -129,7 +129,10 @@ export default function NuevoPedido() {
 
     const itemsAInsertar = items
       .filter((it) => it.prenda_id)
-      .map((it) => ({ ...it, pedido_id: pedido.id }))
+      .map((it) => {
+        const { modo_precio, precio_total, ...rest } = it
+        return { ...rest, pedido_id: pedido.id }
+      })
 
     const { error: errItems } = await supabase.from('items_pedido').insert(itemsAInsertar)
 

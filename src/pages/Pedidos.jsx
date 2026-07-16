@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
-import { formatMoney, formatDate, ESTADOS } from '../lib/format'
+import { formatMoney, formatDate, ESTADOS, parseTitulo } from '../lib/format'
 import EstadoBadge from '../components/EstadoBadge'
 
 export default function Pedidos() {
@@ -78,17 +78,26 @@ export default function Pedidos() {
         <div className="flex-center" style={{ height: '30vh' }}><p className="text-secondary animate-fade-in">Cargando...</p></div>
       ) : (
         <div className="grid gap-3">
-          {filtrados.map((p) => (
+          {filtrados.map((p) => {
+            const { tag, text } = parseTitulo(p.titulo)
+            return (
             <Link
               key={p.pedido_id}
               to={`/pedidos/${p.pedido_id}`}
               className="card-premium animate-slide-up"
               style={{ display: 'block', textDecoration: 'none', padding: '16px' }}
             >
-              <div className="flex items-center justify-between" style={{ marginBottom: '4px' }}>
-                <p style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '16px', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '12px' }}>
-                  {p.titulo || 'Sin título'}
-                </p>
+              <div className="flex items-start justify-between" style={{ marginBottom: '4px' }}>
+                <div style={{ flex: 1, paddingRight: '12px', minWidth: 0 }}>
+                  {tag && (
+                    <span style={{ display: 'inline-block', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'var(--accent-gold)', color: '#000', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase' }}>
+                      {tag}
+                    </span>
+                  )}
+                  <p style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '16px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {text}
+                  </p>
+                </div>
                 <EstadoBadge estado={p.estado} />
               </div>
               <div style={{ marginBottom: '8px' }}>
@@ -104,7 +113,8 @@ export default function Pedidos() {
                 </div>
               </div>
             </Link>
-          ))}
+            )
+          })}
           {filtrados.length === 0 && (
             <div className="flex-center" style={{ padding: '40px 0' }}>
               <p className="text-secondary">No hay pedidos con este filtro.</p>
