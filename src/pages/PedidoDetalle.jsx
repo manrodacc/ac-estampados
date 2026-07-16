@@ -422,17 +422,7 @@ export default function PedidoDetalle() {
           <p style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--success)' }}>{formatMoney(resumen.total_pagado)}</p>
         </div>
         <div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <p className="label-premium">Saldo</p>
-            {resumen.saldo_pendiente > 0 && (
-              <button 
-                onClick={liquidarSaldo}
-                style={{ background: 'var(--accent-gold-light)', border: 'none', color: 'var(--accent-gold)', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-              >
-                Liquidar
-              </button>
-            )}
-          </div>
+          <p className="label-premium">Saldo</p>
           <p style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--danger)' }}>{formatMoney(resumen.saldo_pendiente)}</p>
         </div>
         <div>
@@ -480,12 +470,22 @@ export default function PedidoDetalle() {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <h2 className="label-premium" style={{ margin: 0 }}>Movimientos</h2>
-          <button
-            onClick={() => { setForm(movVacio); setModalOpen(true); }}
-            style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            + Agregar
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {resumen.saldo_pendiente > 0 && (
+              <button 
+                onClick={liquidarSaldo}
+                style={{ background: 'var(--accent-gold-light)', border: 'none', color: 'var(--accent-gold)', fontSize: '11px', padding: '4px 10px', borderRadius: 'var(--radius-full)', cursor: 'pointer', fontWeight: 'bold', textTransform: 'uppercase' }}
+              >
+                Liquidar Saldo
+              </button>
+            )}
+            <button
+              onClick={() => { setForm(movVacio); setModalOpen(true); }}
+              style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              + Agregar
+            </button>
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {movimientos.map((m) => (
