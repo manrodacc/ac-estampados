@@ -109,16 +109,29 @@ export default function PedidoDetalle() {
     e.preventDefault()
     setErrorMovimiento('')
     setGuardando(true)
-    const { error } = await supabase.from('movimientos').insert([
-      {
+    
+    let error;
+    if (form.id) {
+      const res = await supabase.from('movimientos').update({
+        tipo: form.tipo,
+        categoria_id: form.categoria_id || null,
+        concepto: form.concepto,
+        monto: Number(form.monto),
+        fecha: form.fecha || new Date().toISOString().slice(0, 10),
+      }).eq('id', form.id)
+      error = res.error
+    } else {
+      const res = await supabase.from('movimientos').insert([{
         pedido_id: id,
         tipo: form.tipo,
         categoria_id: form.categoria_id || null,
         concepto: form.concepto,
         monto: Number(form.monto),
         fecha: form.fecha || new Date().toISOString().slice(0, 10),
-      },
-    ])
+      }])
+      error = res.error
+    }
+
     setGuardando(false)
     if (error) {
       setErrorMovimiento('Error al guardar movimiento: ' + error.message)
@@ -127,6 +140,28 @@ export default function PedidoDetalle() {
     setForm(movVacio)
     setModalOpen(false)
     cargarTodo()
+  }
+
+  async function eliminarMovimiento(movId) {
+    if (!window.confirm('¿Seguro que deseas eliminar este movimiento?')) return
+    setErrorGlobal('')
+    const { error } = await supabase.from('movimientos').delete().eq('id', movId)
+    if (error) setErrorGlobal('Error al eliminar: ' + error.message)
+    else cargarTodo()
+  }
+
+  async function liquidarSaldo() {
+    if (resumen.saldo_pendiente <= 0) return
+    setErrorGlobal('')
+    const { error } = await supabase.from('movimientos').insert([{
+      pedido_id: id,
+      tipo: 'ingreso',
+      concepto: 'Pago de saldo',
+      monto: resumen.saldo_pendiente,
+      fecha: new Date().toISOString().slice(0, 10),
+    }])
+    if (error) setErrorGlobal('Error al liquidar saldo: ' + error.message)
+    else cargarTodo()
   }
 
   function abrirModalPrendas() {
@@ -387,7 +422,17 @@ export default function PedidoDetalle() {
           <p style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--success)' }}>{formatMoney(resumen.total_pagado)}</p>
         </div>
         <div>
-          <p className="label-premium">Saldo</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <p className="label-premium">Saldo</p>
+            {resumen.saldo_pendiente > 0 && (
+              <button 
+                onClick={liquidarSaldo}
+                style={{ background: 'var(--accent-gold-light)', border: 'none', color: 'var(--accent-gold)', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Liquidar
+              </button>
+            )}
+          </div>
           <p style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--danger)' }}>{formatMoney(resumen.saldo_pendiente)}</p>
         </div>
         <div>
@@ -436,7 +481,7 @@ export default function PedidoDetalle() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <h2 className="label-premium" style={{ margin: 0 }}>Movimientos</h2>
           <button
-            onClick={() => setModalOpen(true)}
+            onClick={() => { setForm(movVacio); setModalOpen(true); }}
             style={{ background: 'none', border: 'none', color: 'var(--accent-gold)', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
           >
             + Agregar
@@ -453,9 +498,15 @@ export default function PedidoDetalle() {
                   <span>{m.categorias_movimiento?.nombre === 'Compra de tela' ? 'Comprar polos' : (m.categorias_movimiento?.nombre || 'General')}</span>
                 </div>
               </div>
-              <p style={{ fontWeight: 'bold', fontSize: '16px', color: m.tipo === 'ingreso' ? 'var(--success)' : 'var(--danger)' }}>
-                {m.tipo === 'ingreso' ? '+' : '-'} {formatMoney(m.monto)}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <p style={{ fontWeight: 'bold', fontSize: '16px', color: m.tipo === 'ingreso' ? 'var(--success)' : 'var(--danger)' }}>
+                  {m.tipo === 'ingreso' ? '+' : '-'} {formatMoney(m.monto)}
+                </p>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => { setForm({ ...m, categoria_id: m.categoria_id || '' }); setModalOpen(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>✏️</button>
+                  <button onClick={() => eliminarMovimiento(m.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)' }}>🗑️</button>
+                </div>
+              </div>
             </div>
           ))}
           {movimientos.length === 0 && (
@@ -570,7 +621,7 @@ export default function PedidoDetalle() {
         </form>
       </Modal>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Agregar movimiento">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={form.id ? "Editar movimiento" : "Agregar movimiento"}>
         <form onSubmit={guardarMovimiento} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {errorMovimiento && (
             <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger)', padding: '12px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '8px' }}>
