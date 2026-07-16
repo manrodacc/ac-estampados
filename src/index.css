@@ -209,6 +209,7 @@ h1, h2, h3, h4, h5, h6 {
 .flex { display: flex; }
 .flex-col { display: flex; flex-direction: column; }
 .items-center { align-items: center; }
+.items-start { align-items: flex-start; }
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
 .flex-center { display: flex; align-items: center; justify-content: center; }
