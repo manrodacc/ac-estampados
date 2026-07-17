@@ -38,6 +38,7 @@ export default function Dashboard() {
   const [pedidosSemana, setPedidosSemana] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [weekOffset, setWeekOffset] = useState(0)
 
   // Movimientos
   const [modalOpen, setModalOpen] = useState(false)
@@ -48,7 +49,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     cargarTodo()
-  }, [])
+  }, [weekOffset])
 
   async function cargarTodo() {
     setLoading(true)
@@ -56,14 +57,21 @@ export default function Dashboard() {
     // Calcular inicio de semana (lunes)
     const hoy = new Date()
     const dia = hoy.getDay() // 0 es domingo
-    const diff = hoy.getDate() - dia + (dia === 0 ? -6 : 1)
+    const diff = hoy.getDate() - dia + (dia === 0 ? -6 : 1) + (weekOffset * 7)
     const inicioSemana = new Date(hoy.setDate(diff))
     inicioSemana.setHours(0,0,0,0)
+
+    const finSemana = new Date(inicioSemana)
+    finSemana.setDate(inicioSemana.getDate() + 6)
+    finSemana.setHours(23,59,59,999)
 
     const [resCaja, resCats, resSemana] = await Promise.all([
       supabase.from('vista_caja_general').select('*').single(),
       supabase.from('categorias_movimiento').select('*').order('nombre'),
-      supabase.from('pedidos').select('estado, costo_total, fecha_pedido').gte('fecha_pedido', inicioSemana.toISOString())
+      supabase.from('pedidos')
+        .select('estado, costo_total, fecha_pedido')
+        .gte('fecha_pedido', inicioSemana.toISOString())
+        .lte('fecha_pedido', finSemana.toISOString())
     ])
 
     if (resCaja.error) setError(resCaja.error.message)
@@ -141,6 +149,24 @@ export default function Dashboard() {
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <h3 className="label-premium" style={{ margin: 0 }}>Rendimiento de la Semana</h3>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              onClick={() => setWeekOffset(o => o - 1)}
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              &lt;
+            </button>
+            <span style={{ fontSize: '12px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', minWidth: '60px', justifyContent: 'center' }}>
+              {weekOffset === 0 ? 'Esta sem.' : weekOffset === -1 ? 'Sem. ant.' : `Hace ${Math.abs(weekOffset)} sem.`}
+            </span>
+            <button 
+              disabled={weekOffset === 0}
+              onClick={() => setWeekOffset(o => o + 1)}
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: weekOffset === 0 ? 'var(--text-muted)' : 'var(--text-secondary)', padding: '4px 8px', borderRadius: '4px', cursor: weekOffset === 0 ? 'default' : 'pointer', opacity: weekOffset === 0 ? 0.5 : 1 }}
+            >
+              &gt;
+            </button>
+          </div>
         </div>
         <div className="card-premium animate-slide-up" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
