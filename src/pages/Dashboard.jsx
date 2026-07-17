@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { formatMoney } from '../lib/format'
 import Modal from '../components/Modal'
@@ -117,7 +118,15 @@ export default function Dashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '40px' }}>
       <div>
-        <h2 style={{ fontSize: '24px', marginBottom: '4px' }}>Resumen General</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <h2 style={{ fontSize: '24px', margin: 0 }}>Resumen General</h2>
+          <Link 
+            to="/reparticiones" 
+            style={{ background: 'var(--accent-gold-light)', border: 'none', color: 'var(--accent-gold)', fontSize: '12px', padding: '6px 12px', borderRadius: 'var(--radius-full)', textDecoration: 'none', fontWeight: 'bold' }}
+          >
+            Repartir Utilidades
+          </Link>
+        </div>
         <p className="text-secondary" style={{ fontSize: '14px' }}>Estado financiero de AC Estampados</p>
       </div>
 

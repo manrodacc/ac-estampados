@@ -9,6 +9,7 @@ import Pedidos from './pages/Pedidos'
 import NuevoPedido from './pages/NuevoPedido'
 import PedidoDetalle from './pages/PedidoDetalle'
 import Catalogos from './pages/Catalogos'
+import Reparticiones from './pages/Reparticiones'
 
 export default function App() {
   const session = useAuth()
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/pedidos/nuevo" element={<NuevoPedido />} />
           <Route path="/pedidos/:id" element={<PedidoDetalle />} />
           <Route path="/catalogos" element={<Catalogos />} />
+          <Route path="/reparticiones" element={<Reparticiones />} />
         </Routes>
       </main>
       
