@@ -253,7 +253,7 @@ export default function Reparticiones() {
             </div>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
               <label className="label-premium">Fecha del reparto</label>
               <input 
@@ -271,7 +271,7 @@ export default function Reparticiones() {
                 className="input-premium" 
                 value={notas} 
                 onChange={(e) => setNotas(e.target.value)} 
-                placeholder="Ej: Semana del 12 al 18" 
+                placeholder="Ej: Semana del 12 al 18 de Agosto" 
               />
             </div>
           </div>
