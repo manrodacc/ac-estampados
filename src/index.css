@@ -122,6 +122,8 @@ h1, h2, h3, h4, h5, h6 {
 /* Inputs */
 .input-premium {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background-color: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border-color);
   color: var(--text-primary);

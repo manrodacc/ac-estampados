@@ -253,18 +253,19 @@ export default function Reparticiones() {
             </div>
           </div>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+            <div style={{ width: '100%' }}>
               <label className="label-premium">Fecha del reparto</label>
               <input 
                 type="date" 
                 className="input-premium" 
                 value={fecha} 
                 onChange={(e) => setFecha(e.target.value)} 
+                style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               />
-              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Si lo dejas vacío, usa la fecha de hoy</p>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', wordBreak: 'break-word' }}>Si lo dejas vacío, usa la fecha de hoy</p>
             </div>
-            <div>
+            <div style={{ width: '100%' }}>
               <label className="label-premium">Notas (Opcional)</label>
               <input 
                 type="text" 
@@ -272,6 +273,7 @@ export default function Reparticiones() {
                 value={notas} 
                 onChange={(e) => setNotas(e.target.value)} 
                 placeholder="Ej: Semana del 12 al 18 de Agosto" 
+                style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}
               />
             </div>
           </div>
