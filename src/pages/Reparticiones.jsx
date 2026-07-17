@@ -15,6 +15,7 @@ export default function Reparticiones() {
   const [montoTotal, setMontoTotal] = useState('')
   const [montoRenata, setMontoRenata] = useState('')
   const [montoRodrigo, setMontoRodrigo] = useState('')
+  const [fecha, setFecha] = useState('')
   const [notas, setNotas] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [errorModal, setErrorModal] = useState('')
@@ -76,13 +77,15 @@ export default function Reparticiones() {
 
     setGuardando(true)
 
+    const fechaFinal = fecha || new Date().toISOString().slice(0, 10)
+
     // 1. Guardar en la tabla reparticiones
     const { error: errorRep } = await supabase.from('reparticiones').insert([{
       monto_total: total,
       monto_renata: renata,
       monto_rodrigo: rodrigo,
       notas: notas,
-      fecha: new Date().toISOString().slice(0, 10)
+      fecha: fechaFinal
     }])
 
     if (errorRep) {
@@ -93,8 +96,8 @@ export default function Reparticiones() {
 
     // 2. Crear egresos en la caja general
     const { error: errorMovs } = await supabase.from('movimientos').insert([
-      { tipo: 'egreso', concepto: 'Reparto de utilidades - Renata', monto: renata, fecha: new Date().toISOString().slice(0, 10) },
-      { tipo: 'egreso', concepto: 'Reparto de utilidades - Rodrigo', monto: rodrigo, fecha: new Date().toISOString().slice(0, 10) }
+      { tipo: 'egreso', concepto: 'Reparto de utilidades - Renata', monto: renata, fecha: fechaFinal },
+      { tipo: 'egreso', concepto: 'Reparto de utilidades - Rodrigo', monto: rodrigo, fecha: fechaFinal }
     ])
 
     if (errorMovs) {
@@ -110,6 +113,7 @@ export default function Reparticiones() {
     setMontoTotal('')
     setMontoRenata('')
     setMontoRodrigo('')
+    setFecha('')
     setNotas('')
     cargarTodo()
   }
@@ -249,15 +253,27 @@ export default function Reparticiones() {
             </div>
           </div>
           
-          <div>
-            <label className="label-premium">Notas (Opcional)</label>
-            <input 
-              type="text" 
-              className="input-premium" 
-              value={notas} 
-              onChange={(e) => setNotas(e.target.value)} 
-              placeholder="Ej: Semana del 12 al 18 de Agosto" 
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div>
+              <label className="label-premium">Fecha del reparto</label>
+              <input 
+                type="date" 
+                className="input-premium" 
+                value={fecha} 
+                onChange={(e) => setFecha(e.target.value)} 
+              />
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Si lo dejas vacío, usa la fecha de hoy</p>
+            </div>
+            <div>
+              <label className="label-premium">Notas (Opcional)</label>
+              <input 
+                type="text" 
+                className="input-premium" 
+                value={notas} 
+                onChange={(e) => setNotas(e.target.value)} 
+                placeholder="Ej: Semana del 12 al 18" 
+              />
+            </div>
           </div>
 
           <button type="submit" className="btn-primary" disabled={guardando}>
